@@ -7,8 +7,8 @@
     "build": "electron-builder",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["web development", "JavaScript", "Node.js", "discord", "canary"],
+  "author": "emir814",
   "license": "GPL-3.0",
   "description": "Simple Discord Canary App",
   "dependencies": {
