@@ -1,5 +1,8 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, Tray, Menu } = require('electron');
 const path = require('path');
+
+let tray = null;
+let win = null;
 
 async function createWindow() {
   // Dinamik import kullanarak electron-store'u içe aktar
@@ -11,7 +14,7 @@ async function createWindow() {
   const isMaximized = store.get('isMaximized') || false;
 
   // Yeni bir tarayıcı penceresi oluştur
-  let win = new BrowserWindow({
+  win = new BrowserWindow({
     width: windowState.width,
     height: windowState.height,
     x: windowState.x,
@@ -29,7 +32,13 @@ async function createWindow() {
   }
 
   // Pencere kapanırken durumu kaydet
-  win.on('close', () => {
+  win.on('close', (event) => {
+    // Pencerenin gerçekten kapanmasını önle
+    if (!app.isQuiting) {
+      event.preventDefault();
+      win.hide();
+    }
+
     if (!win.isMaximized()) {
       store.set('windowState', win.getBounds());
     }
@@ -40,7 +49,33 @@ async function createWindow() {
   win.loadURL('https://canary.discord.com/app');
 }
 
-app.on('ready', createWindow);
+app.on('ready', () => {
+  createWindow();
+
+  // Tray oluştur
+  tray = new Tray(path.join(__dirname, 'assets', 'icon.png'));
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Show App',
+      click: () => {
+        win.show();
+      }
+    },
+    {
+      label: 'Quit',
+      click: () => {
+        app.isQuiting = true;
+        app.quit();
+      }
+    }
+  ]);
+  tray.setToolTip('Discord Canary');
+  tray.setContextMenu(contextMenu);
+
+  tray.on('click', () => {
+    win.isVisible() ? win.hide() : win.show();
+  });
+});
 
 app.on('window-all-closed', () => {
   // macOS dışındaki platformlarda uygulamayı kapat
@@ -53,5 +88,7 @@ app.on('activate', () => {
   // macOS'ta pencere yokken tıklanınca yeni pencere oluştur
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
+  } else {
+    win.show();
   }
 });
